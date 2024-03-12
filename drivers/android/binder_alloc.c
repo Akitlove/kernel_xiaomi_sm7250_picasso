@@ -35,6 +35,9 @@
 #include "binder_trace.h"
 
 struct list_lru binder_alloc_lru;
+#if IS_ENABLED(CONFIG_MILLET)
+#include <linux/millet.h>
+#endif
 
 static DEFINE_MUTEX(binder_alloc_mmap_lock);
 
@@ -390,6 +393,11 @@ static bool debug_low_async_space_locked(struct binder_alloc *alloc, int pid)
 	return false;
 }
 
+#if IS_ENABLED(CONFIG_MILLET)
+extern struct task_struct *binder_buff_owner(struct binder_alloc *alloc);
+#endif
+
+/* Callers preallocate @new_buffer, it is freed by this function if unused */
 static struct binder_buffer *binder_alloc_new_buf_locked(
 				struct binder_alloc *alloc,
 				size_t data_size,
