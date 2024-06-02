@@ -16,25 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if ! [ -d "$HOME/tc/aosp-clang" ]; then
-echo "aosp clang not found! Cloning..."
-if ! git clone -q https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone.git --depth=1 ~/tc/aosp-clang; then
-echo "Cloning failed! Aborting..."
-exit 1
-fi
-fi
-
-if ! [ -d "$HOME/tc/aarch64-linux-android-4.9" ]; then
-echo "aarch64-linux-android-4.9 not found! Cloning..."
-if ! git clone -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git --depth=1 --single-branch ~/tc/aarch64-linux-android-4.9; then
-echo "Cloning failed! Aborting..."
-exit 1
-fi
-fi
-
-GCC_64_DIR="$HOME/tc/aarch64-linux-android-4.9"
-KBUILD_COMPILER_STRING=$($HOME/tc/aosp-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-KBUILD_LINKER_STRING=$($HOME/tc/aosp-clang/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
+GCC_64_DIR="$HOME/WeebX-Clang-17.0.6"
+KBUILD_COMPILER_STRING=$($HOME/WeebX-Clang-17.0.6/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+KBUILD_LINKER_STRING=$($HOME/WeebX-Clang-17.0.6/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
 export KBUILD_COMPILER_STRING
 export KBUILD_LINKER_STRING
 
@@ -42,12 +26,12 @@ DEVICE=$1
 TYPE=$2
 IS_KSU=""
 
-if [ "${DEVICE}" = "monet" ]; then
+if [ "${DEVICE}" = "picasso" ]; then
 if [ "${TYPE}" = "ksu" ]; then
-DEFCONFIG=monet-ksu_defconfig
+DEFCONFIG=picasso-ksu_defconfig
 IS_KSU="-ksu"
 else
-DEFCONFIG=monet_defconfig
+DEFCONFIG=picasso_defconfig
 fi
 fi
 
@@ -79,7 +63,8 @@ CC=clang \
 LLVM=1 \
 LLVM_IAS=1 \
 CLANG_TRIPLE=aarch64-linux-gnu- \
-CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-android- \
+CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-gnu- \
+CROSS_COMPILE_COMPAT=$GCC_64_DIR/bin/arm-linux-gnueabi- \
 -j${KEBABS}"
 
 dts_source=arch/arm64/boot/dts/vendor/qcom
@@ -87,8 +72,8 @@ dts_source=arch/arm64/boot/dts/vendor/qcom
 START=$(date +"%s")
 
 # Set compiler Path
-export PATH="$HOME/tc/aosp-clang/bin:$PATH"
-export LD_LIBRARY_PATH=${HOME}/tc/aosp-clang/lib64:$LD_LIBRARY_PATH
+export PATH="$HOME/WeebX-Clang-17.0.6/bin:$PATH"
+export LD_LIBRARY_PATH=${HOME}/WeebX-Clang-17.0.6/lib64:$LD_LIBRARY_PATH
 
 echo "------ Starting Compilation ------"
 
@@ -105,28 +90,3 @@ make -j${KEBABS} ${ARGS} CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="ccache g
 find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/boot/dtb
 
 git checkout arch/arm64/boot/dts/vendor &>/dev/null
-
-echo "------ Finishing Build ------"
-
-END=$(date +"%s")
-DIFF=$((END - START))
-zipname="$VERSION.zip"
-if [ -f "out/arch/arm64/boot/Image" ] && [ -f "out/arch/arm64/boot/dtb" ]; then
-        if [ "${DEVICE}" = "monet" ]; then
-          git clone -q https://github.com/alecchangod/AnyKernel3.git -b monet
-	fi
-	cp out/arch/arm64/boot/Image AnyKernel3
-	cp out/arch/arm64/boot/dtb AnyKernel3
-	rm -f *zip
-	cd AnyKernel3
-	zip -r9 "../${zipname}" * -x '*.git*' README.md *placeholder >> /dev/null
-	cd ..
-	rm -rf AnyKernel3
-	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
-	echo ""
-	echo -e ${zipname} " is ready!"
-	echo ""
-        curl --upload-file ${zipname} https://free.keep.sh
-else
-	echo -e "\n Compilation Failed!"
-fi
