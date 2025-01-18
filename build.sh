@@ -25,18 +25,18 @@ bash <(curl -s "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main
 cd $cwd
 fi
 
-GCC_64_DIR="$HOME/toolchains/neutron-clang"
-KBUILD_COMPILER_STRING=$($HOME/toolchains/neutron-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-KBUILD_LINKER_STRING=$($HOME/toolchains/neutron-clang/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
+GCC_64_DIR="/run/media/akitlove/516ef968-ad33-40c8-99e3-cbcce35bad06/neutron-clang"
+KBUILD_COMPILER_STRING=$(/run/media/akitlove/516ef968-ad33-40c8-99e3-cbcce35bad06/neutron-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+KBUILD_LINKER_STRING=$(/run/media/akitlove/516ef968-ad33-40c8-99e3-cbcce35bad06/neutron-clang/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
 export KBUILD_COMPILER_STRING
 export KBUILD_LINKER_STRING
 
 DEVICE=$1
 
-if [ "${DEVICE}" = "monet" ]; then
-DEFCONFIG=monet_defconfig
-else if [ "${DEVICE}" = "vangogh" ]; then
-DEFCONFIG=vangogh_defconfig
+if [ "${DEVICE}" = "milito" ]; then
+DEFCONFIG=milito_defconfig
+else if [ "${DEVICE}" = "milito" ]; then
+DEFCONFIG=milito_defconfig
 fi
 fi
 
@@ -77,7 +77,7 @@ dts_source=arch/arm64/boot/dts/vendor/qcom
 START=$(date +"%s")
 
 # Set compiler Path
-export PATH="$HOME/toolchains/neutron-clang/bin:$PATH"
+export PATH="/run/media/akitlove/516ef968-ad33-40c8-99e3-cbcce35bad06/neutron-clang/bin:$PATH"
 export LD_LIBRARY_PATH=${HOME}/tc/aosp-clang/lib64:$LD_LIBRARY_PATH
 
 echo "------ Starting Compilation ------"
@@ -97,22 +97,3 @@ find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/
 git checkout arch/arm64/boot/dts/vendor &>/dev/null
 
 echo "------ Finishing Build ------"
-
-END=$(date +"%s")
-DIFF=$((END - START))
-zipname="$VERSION.zip"
-if [ -f "out/arch/arm64/boot/Image" ] && [ -f "out/arch/arm64/boot/dtb" ]; then
-	git clone -q https://github.com/alecchangod/AnyKernel3.git -b ${DEVICE}
-	cp out/arch/arm64/boot/Image AnyKernel3
-	cp out/arch/arm64/boot/dtb AnyKernel3
-	rm -f *zip
-	cd AnyKernel3
-	zip -r9 "../${zipname}" * -x '*.git*' README.md *placeholder >> /dev/null
-	cd ..
-	rm -rf AnyKernel3
-	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
-	echo ""
-	echo -e ${zipname} " is ready!"
-else
-	echo -e "\n Compilation Failed!"
-fi
